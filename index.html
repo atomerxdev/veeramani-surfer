@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    /><meta
+      name="theme-color" content="#e0761f" />
+    
+    <!-- Inline SVG favicon: no extra file, no network request, no 404. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e0761f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%23ffc94a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fff6e6'/%3E%3C/svg%3E"
+    />
+    <meta
+      name="description"
+      content="Veeramani Surfer - an original 3D endless runner. Film the vlog, then sprint through a colourful fictional Tamil Nadu street market as two delivery boys chase you. Dodge handcarts, jump crates and collect tokens."
+    />
+    <title>Veeramani Surfer &mdash; Tamil Nadu Street Runner</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas" tabindex="-1" aria-label="Game viewport"></canvas>
+
+      <!-- Accessible live region: announces run state for screen readers. -->
+      <p id="a11y-status" class="sr-only" role="status" aria-live="polite"></p>
+
+      <div id="ui-root">
+        <!-- LOADING ------------------------------------------------------ -->
+        <section class="screen screen--loading is-active" data-screen="loading">
+          <div class="panel panel--narrow">
+            <h1 class="logo">
+              <span class="logo__ta">வீரமணி</span>
+              <span class="logo__en">Veeramani Surfer</span>
+            </h1>
+            <p class="tagline">Tamil Nadu Street Run</p>
+            <div class="loader" aria-hidden="true"><span></span></div>
+            <p class="muted">Warming up the market&hellip;</p>
+          </div>
+        </section>
+
+        <!-- MAIN MENU ---------------------------------------------------- -->
+        <section class="screen" data-screen="menu">
+          <div class="panel">
+            <h1 class="logo">
+              <span class="logo__ta">வீரமணி</span>
+              <span class="logo__en">Veeramani Surfer</span>
+            </h1>
+            <p class="tagline">Tamil Nadu Street Run</p>
+            <p class="blurb">
+              Veeramani is live on his channel and two delivery boys just stole his vlog bag. Sprint
+              down the market lanes, vault the crates, slide under the awnings and keep ahead of the
+              chase.
+            </p>
+            <div class="btn-row">
+              <button class="btn btn--primary" type="button" data-action="play">Play</button>
+              <button class="btn" type="button" data-action="tutorial">How to Play</button>
+              <button class="btn" type="button" data-action="settings">Settings</button>
+            </div>
+            <dl class="stats">
+              <div><dt>Best score</dt><dd data-bind="menu-best-score">0</dd></div>
+              <div><dt>Best distance</dt><dd data-bind="menu-best-distance">0 m</dd></div>
+              <div><dt>Runs</dt><dd data-bind="menu-runs">0</dd></div>
+            </dl>
+            <div class="toggle-row">
+              <button class="btn btn--ghost" type="button" data-action="toggle-mute" aria-pressed="false">
+                Sound: on
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TUTORIAL ----------------------------------------------------- -->
+        <section class="screen" data-screen="tutorial">
+          <div class="panel">
+            <h2>How to Play</h2>
+            <div class="cols">
+              <div>
+                <h3>Desktop</h3>
+                <ul class="keys">
+                  <li><kbd>A</kbd> <kbd>&larr;</kbd> move left</li>
+                  <li><kbd>D</kbd> <kbd>&rarr;</kbd> move right</li>
+                  <li><kbd>W</kbd> <kbd>&uarr;</kbd> <kbd>Space</kbd> jump</li>
+                  <li><kbd>S</kbd> <kbd>&darr;</kbd> slide</li>
+                  <li><kbd>Esc</kbd> pause</li>
+                  <li><kbd>M</kbd> mute</li>
+                </ul>
+              </div>
+              <div>
+                <h3>Mobile</h3>
+                <ul class="keys">
+                  <li>Swipe left / right &mdash; change lane</li>
+                  <li>Swipe up &mdash; jump</li>
+                  <li>Swipe down &mdash; slide</li>
+                  <li>Tap the on-screen pad buttons if swiping is awkward</li>
+                </ul>
+              </div>
+            </div>
+            <h3>Rules</h3>
+            <ul class="rules">
+              <li><strong>Lantern vendors</strong> sell Tamil-style tokens &mdash; grab them for points.</li>
+              <li>Crash once and Veeramani stumbles; crash again before he recovers and the run ends.</li>
+              <li>Delivery-Boy 1 and Delivery-Boy 2 close in after every stumble. Survive and they fall back.</li>
+              <li>Shields absorb a crash. Magnets pull tokens. Multipliers and boosts are temporary.</li>
+            </ul>
+            <div class="btn-row">
+              <button class="btn btn--primary" type="button" data-action="play">Start running</button>
+              <button class="btn" type="button" data-action="menu">Back</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS ----------------------------------------------------- -->
+        <section class="screen" data-screen="settings">
+          <div class="panel">
+            <h2>Settings</h2>
+            <div class="field">
+              <label for="setting-quality">Graphics quality</label>
+              <select id="setting-quality" data-setting="quality">
+                <option value="low">Low (best battery)</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="field field--check">
+              <input id="setting-reduced-motion" type="checkbox" data-setting="reducedMotion" />
+              <label for="setting-reduced-motion">Reduce camera motion</label>
+            </div>
+            <div class="field field--check">
+              <input id="setting-sound" type="checkbox" data-setting="sound" />
+              <label for="setting-sound">Sound effects and ambience</label>
+            </div>
+            <div class="field field--check">
+              <input id="setting-touch-pad" type="checkbox" data-setting="touchPad" />
+              <label for="setting-touch-pad">Always show touch pad</label>
+            </div>
+            <p class="muted" data-bind="seed-line">Track seed: random</p>
+            <div class="btn-row">
+              <button class="btn btn--primary" type="button" data-action="close-settings">Done</button>
+              <button class="btn btn--danger" type="button" data-action="reset-data">Reset saved data</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- INTRO VLOG ----------------------------------------------------- -->
+        <div class="screen screen--vlog" data-screen="vlog">
+          <div class="vlog__frame" aria-hidden="true">
+            <div class="vlog__rec"><span class="vlog__rec-dot"></span>REC</div>
+            <div class="vlog__live">LIVE</div>
+          </div>
+          <p class="vlog__caption" data-bind="vlog-caption"></p>
+          <p class="vlog__hint" data-bind="vlog-hint"></p>
+        </div>
+
+        <!-- HUD ---------------------------------------------------------- -->
+        <div class="screen screen--hud" data-screen="hud">
+          <header class="hud hud--top">
+            <div class="hud__block">
+              <span class="hud__label">Score</span>
+              <span class="hud__value" data-bind="hud-score">0</span>
+            </div>
+            <div class="hud__block">
+              <span class="hud__label">Best</span>
+              <span class="hud__value hud__value--small" data-bind="hud-best">0</span>
+            </div>
+            <div class="hud__block">
+              <span class="hud__label">Tokens</span>
+              <span class="hud__value hud__value--small" data-bind="hud-tokens">0</span>
+            </div>
+            <div class="hud__spacer"></div>
+            <button class="btn btn--icon" type="button" data-action="pause" aria-label="Pause game">II</button>
+          </header>
+          <div class="hud__badges" data-bind="hud-badges" aria-live="polite"></div>
+          <div class="hud__pressure" data-bind="hud-pressure" aria-hidden="true">
+            <span class="hud__pressure-fill"></span>
+            <span class="hud__pressure-text">Riders close</span>
+          </div>
+        </div>
+
+        <!-- TOUCH PAD ---------------------------------------------------- -->
+        <div class="touch-pad" data-screen="touchpad" data-touch-pad>
+          <button class="touch-pad__btn" type="button" data-touch-action="left" aria-label="Move left">&larr;</button>
+          <button class="touch-pad__btn" type="button" data-touch-action="jump" aria-label="Jump">&uarr;</button>
+          <button class="touch-pad__btn" type="button" data-touch-action="slide" aria-label="Slide">&darr;</button>
+          <button class="touch-pad__btn" type="button" data-touch-action="right" aria-label="Move right">&rarr;</button>
+        </div>
+
+        <!-- PAUSE -------------------------------------------------------- -->
+        <section class="screen screen--modal" data-screen="pause">
+          <div class="panel panel--narrow">
+            <h2>Paused</h2>
+            <p class="muted">The riders are waiting&hellip;</p>
+            <div class="btn-row btn-row--stack">
+              <button class="btn btn--primary" type="button" data-action="resume">Resume</button>
+              <button class="btn" type="button" data-action="settings">Settings</button>
+              <button class="btn" type="button" data-action="restart">Restart</button>
+              <button class="btn btn--danger" type="button" data-action="quit">Quit to menu</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- GAME OVER ---------------------------------------------------- -->
+        <section class="screen screen--modal" data-screen="gameover">
+          <div class="panel">
+            <h2 data-bind="gameover-title">Run over!</h2>
+            <p class="muted" data-bind="gameover-reason">The riders caught up.</p>
+            <dl class="stats stats--big">
+              <div><dt>Score</dt><dd data-bind="gameover-score">0</dd></div>
+              <div><dt>Distance</dt><dd data-bind="gameover-distance">0 m</dd></div>
+              <div><dt>Tokens</dt><dd data-bind="gameover-tokens">0</dd></div>
+              <div><dt>Best</dt><dd data-bind="gameover-best">0</dd></div>
+            </dl>
+            <p class="record" data-bind="gameover-record" hidden>New personal best!</p>
+            <div class="btn-row">
+              <button class="btn btn--primary" type="button" data-action="restart">Run again</button>
+              <button class="btn" type="button" data-action="quit">Main menu</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

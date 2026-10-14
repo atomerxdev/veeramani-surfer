@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vite/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+*.local
+*.log
+.DS_Store
+Thumbs.db
+.vercel/
+.gemini/
