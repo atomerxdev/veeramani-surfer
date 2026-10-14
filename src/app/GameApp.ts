@@ -47,7 +47,6 @@ import { ScoreManager, type RunResult } from '../gameplay/ScoreManager';
 import { ChaseManager } from '../gameplay/ChaseManager';
 import { EffectsPool } from '../gameplay/Effects';
 import { LeaderboardService } from '../gameplay/leaderboard/LeaderboardService';
-import type { LeaderboardTab } from '../gameplay/leaderboard/LeaderboardTypes';
 import { boxesOverlap, type Collider } from '../gameplay/CollisionSystem';
 import { UIManager } from '../ui/UIManager';
 import type { SettingsChange } from '../ui/SettingsController';
@@ -212,7 +211,6 @@ export class GameApp {
         onLeaderboard: () => this.openLeaderboard(),
         onCloseLeaderboard: () => this.closeLeaderboard(),
         onSubmitScore: () => void this.handleSubmitScore(),
-        onLeaderboardTabChange: (tab) => void this.refreshLeaderboard(tab),
         onRandomName: () => this.handleRandomName(),
         onPlayerNameChanged: (name) => this.handlePlayerNameChanged(name),
         onToggleMute: () => this.toggleMute(),
@@ -420,7 +418,7 @@ export class GameApp {
     this.state.transition('Leaderboard');
     this.ui.setGameState('Leaderboard');
     this.input.setEnabled(false);
-    void this.refreshLeaderboard(this.ui.leaderboard.activeTab);
+    void this.refreshLeaderboard();
     this.audio.play('click');
     this.ui.announce('Leaderboard open');
   }
@@ -436,8 +434,8 @@ export class GameApp {
     this.audio.play('click');
   }
 
-  async refreshLeaderboard(tab: LeaderboardTab): Promise<void> {
-    const summary = await this.leaderboard.getLeaderboard(tab);
+  async refreshLeaderboard(): Promise<void> {
+    const summary = await this.leaderboard.getLeaderboard();
     this.ui.leaderboard.render(summary);
   }
 
@@ -455,11 +453,12 @@ export class GameApp {
 
     if (res.success) {
       this.audio.play('click');
-      const rankMsg = res.localRank ? `Saved as ${name} • Rank #${res.localRank}` : `Saved to leaderboard as ${name}!`;
+      const rank = res.rank ?? res.globalRank;
+      const rankMsg = rank ? `Saved as ${name} • Global Rank #${rank}` : `Saved to online leaderboard as ${name}!`;
       this.ui.gameover.showSaved(rankMsg, true);
       this.ui.announce(rankMsg);
     } else {
-      this.ui.gameover.showSaved(`Recorded locally as ${name}`, false);
+      this.ui.gameover.showSaved(`Could not submit score: ${res.reason || 'Validation error'}`, false);
     }
   }
 
@@ -903,13 +902,14 @@ export class GameApp {
       });
 
       if (res.success) {
-        const rankMsg = res.localRank
-          ? `Saved as ${runnerName} • Rank #${res.localRank}`
+        const rank = res.rank ?? res.globalRank;
+        const rankMsg = rank
+          ? `Saved as ${runnerName} • Global Rank #${rank}`
           : `Saved to Leaderboard as ${runnerName}!`;
         this.ui.gameover.showSaved(rankMsg, true);
         this.ui.announce(rankMsg);
       } else {
-        this.ui.gameover.showSaved(`Recorded locally as ${runnerName}`, false);
+        this.ui.gameover.showSaved(`Could not submit score: ${res.reason || 'Validation error'}`, false);
       }
     })();
   }

@@ -9,15 +9,14 @@ import { safeLocalStorage, type StorageLike } from '../../core/StorageManager';
 import type {
   LeaderboardEntry,
   LeaderboardSummary,
-  LeaderboardTab,
   ScoreSubmission,
+  ScoreSubmissionResult,
 } from './LeaderboardTypes';
 import {
   generateRunSignature,
   sanitizePlayerName,
   validateSubmission,
 } from './LeaderboardValidation';
-import { LocalLeaderboardService } from './LocalLeaderboardService';
 
 export const DEVICE_ID_KEY = 'santhai-sprint.device.id';
 export const PLAYER_NAME_KEY = 'santhai-sprint.player.name';
@@ -52,7 +51,6 @@ function generateUuid(): string {
 
 export class LeaderboardService {
   readonly deviceId: string;
-  readonly local: LocalLeaderboardService;
   private playerName: string;
   private globalEntries: LeaderboardEntry[] = [];
   private readonly apiUrl?: string;
@@ -61,7 +59,6 @@ export class LeaderboardService {
     private readonly storage: StorageLike | null = safeLocalStorage(),
     options: { apiUrl?: string } = {},
   ) {
-    this.local = new LocalLeaderboardService(storage);
     this.deviceId = this.initDeviceId();
     this.playerName = this.initPlayerName();
     this.apiUrl = options.apiUrl ?? '/api/leaderboard';
@@ -138,14 +135,11 @@ export class LeaderboardService {
   }
 
   /**
-   * Submit a run score to local arcade storage and the global leaderboard.
+   * Submit a run score to the online leaderboard.
    */
-  async submitScore(submission: Omit<ScoreSubmission, 'deviceId' | 'signature'>): Promise<{
-    success: boolean;
-    reason?: string;
-    localRank?: number;
-    globalRank?: number;
-  }> {
+  async submitScore(
+    submission: Omit<ScoreSubmission, 'deviceId' | 'signature'>,
+  ): Promise<ScoreSubmissionResult> {
     const fullSubmission: ScoreSubmission = {
       ...submission,
       deviceId: this.deviceId,
@@ -165,16 +159,7 @@ export class LeaderboardService {
     const sanitizedName = validation.sanitizedName ?? this.playerName;
     this.setPlayerName(sanitizedName);
 
-    // 1. Add to local arcade leaderboard
-    const localEntry = this.local.addEntry({
-      name: sanitizedName,
-      score: fullSubmission.score,
-      distance: fullSubmission.distance,
-      tokens: fullSubmission.tokens,
-      timestamp: Date.now(),
-    });
-
-    // 2. Upsert into global leaderboard (1 record per deviceId)
+    // 1. Upsert into global leaderboard (1 record per deviceId)
     const existingIndex = this.globalEntries.findIndex((e) => e.id === this.deviceId);
     const playerEntry: LeaderboardEntry = {
       id: this.deviceId,
@@ -199,7 +184,7 @@ export class LeaderboardService {
 
     let globalRank = this.globalEntries.findIndex((e) => e.id === this.deviceId) + 1;
 
-    // 3. Dispatch to remote API if configured
+    // 2. Dispatch to remote API if configured
     if (this.apiUrl && typeof fetch !== 'undefined') {
       try {
         const response = await fetch(this.apiUrl, {
@@ -224,28 +209,18 @@ export class LeaderboardService {
 
     return {
       success: true,
-      localRank: localEntry.rank,
+      rank: globalRank > 0 ? globalRank : undefined,
       globalRank: globalRank > 0 ? globalRank : undefined,
     };
   }
 
   /**
-   * Get scores for the specified tab ('global' or 'local').
+   * Get live online leaderboard rankings.
    */
-  async getLeaderboard(tab: LeaderboardTab): Promise<LeaderboardSummary> {
-    if (tab === 'local') {
-      const entries = this.local.getEntries();
-      return {
-        entries,
-        playerBest: entries[0] ?? null,
-        playerRank: entries.length > 0 ? 1 : null,
-      };
-    }
-
+  async getLeaderboard(_tab?: string): Promise<LeaderboardSummary> {
     // Attempt to pull latest online scores
     await this.fetchOnlineScores();
 
-    // Global tab
     const ranked = this.globalEntries.map((entry, index) => ({
       ...entry,
       rank: index + 1,
@@ -257,7 +232,7 @@ export class LeaderboardService {
     const playerRank = playerIndex >= 0 ? playerIndex + 1 : null;
 
     return {
-      entries: ranked.slice(0, 20),
+      entries: ranked.slice(0, 50),
       playerBest,
       playerRank,
     };
@@ -266,6 +241,13 @@ export class LeaderboardService {
   private readGlobalCache(): LeaderboardEntry[] {
     let list: LeaderboardEntry[] = [];
     if (this.storage) {
+      // Purge any stale legacy local leaderboard data from localStorage
+      try {
+        this.storage.removeItem('santhai-sprint.leaderboard.local.v1');
+      } catch {
+        /* ignore */
+      }
+
       try {
         const raw = this.storage.getItem(GLOBAL_CACHE_KEY);
         if (raw) {

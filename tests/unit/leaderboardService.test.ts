@@ -78,7 +78,7 @@ describe('LeaderboardService', () => {
     expect(global.playerRank).toBeNull();
   });
 
-  it('submits score and updates both local and global views', async () => {
+  it('submits score and updates global ranking', async () => {
     const storage = new MemoryStorage();
     const service = new LeaderboardService(storage, { apiUrl: '' });
 
@@ -92,17 +92,13 @@ describe('LeaderboardService', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.localRank).toBe(1);
+    expect(result.rank).toBe(1);
 
-    // Check local tab
-    const local = await service.getLeaderboard('local');
-    expect(local.entries).toHaveLength(1);
-    expect(local.entries[0].name).toBe('Champion');
-    expect(local.entries[0].score).toBe(9500);
-
-    // Check global tab
-    const global = await service.getLeaderboard('global');
+    // Check online global leaderboard
+    const global = await service.getLeaderboard();
     expect(global.entries).toHaveLength(1);
+    expect(global.entries[0].name).toBe('Champion');
+    expect(global.entries[0].score).toBe(9500);
     expect(global.playerBest).not.toBeNull();
     expect(global.playerBest?.score).toBe(9500);
     expect(global.playerBest?.isCurrentPlayer).toBe(true);
@@ -124,7 +120,7 @@ describe('LeaderboardService', () => {
     expect(result.success).toBe(false);
     expect(result.reason).toBeDefined();
 
-    const local = await service.getLeaderboard('local');
-    expect(local.entries).toHaveLength(0);
+    const leaderboard = await service.getLeaderboard();
+    expect(leaderboard.entries).toHaveLength(0);
   });
 });

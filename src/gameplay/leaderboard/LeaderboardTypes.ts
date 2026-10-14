@@ -37,7 +37,14 @@ export interface ValidationResult {
   readonly sanitizedName?: string;
 }
 
-export type LeaderboardTab = 'global' | 'local';
+export interface ScoreSubmissionResult {
+  readonly success: boolean;
+  readonly reason?: string;
+  readonly rank?: number;
+  readonly globalRank?: number;
+}
+
+export type LeaderboardTab = 'global';
 
 export interface LeaderboardSummary {
   readonly entries: readonly LeaderboardEntry[];

@@ -16,7 +16,6 @@ import { GameOverController, type GameOverSummary } from './GameOverController';
 import { SettingsController, type SettingsChange } from './SettingsController';
 import { VlogController } from './VlogController';
 import { LeaderboardController } from './LeaderboardController';
-import type { LeaderboardTab } from '../gameplay/leaderboard/LeaderboardTypes';
 import { optionalElement } from './Dom';
 
 export interface UIActions {
@@ -31,7 +30,6 @@ export interface UIActions {
   onLeaderboard(): void;
   onCloseLeaderboard(): void;
   onSubmitScore?(): void;
-  onLeaderboardTabChange?(tab: LeaderboardTab): void;
   onRandomName?(): void;
   onPlayerNameChanged?(name: string): void;
   onToggleMute(): void;
@@ -82,9 +80,7 @@ export class UIManager {
     private readonly actions: UIActions,
     options: { touchDevice?: boolean } = {},
   ) {
-    this.leaderboard = new LeaderboardController({
-      onTabChange: (tab) => this.actions.onLeaderboardTabChange?.(tab),
-    });
+    this.leaderboard = new LeaderboardController();
     this.element = optionalElement<HTMLElement>(document, '#ui-root');
     if (!this.element) throw new Error('UI root element is missing');
     this.touchPadEnabled = options.touchDevice ?? false;

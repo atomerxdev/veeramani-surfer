@@ -9,7 +9,7 @@ import type { LeaderboardSummary, LeaderboardTab } from '../gameplay/leaderboard
 import { bindTarget, formatDistance, formatScore, optionalElement, setTextIfChanged } from './Dom';
 
 export interface LeaderboardEvents {
-  onTabChange(tab: LeaderboardTab): void;
+  onTabChange?(tab: LeaderboardTab): void;
 }
 
 export class LeaderboardController {
@@ -18,39 +18,16 @@ export class LeaderboardController {
   private readonly emptyMsg = bindTarget(document, 'leaderboard-empty');
   private readonly userRank = bindTarget(document, 'leaderboard-user-rank');
   private readonly userScore = bindTarget(document, 'leaderboard-user-score');
-  private readonly tabs: NodeListOf<HTMLButtonElement>;
-
-  private currentTab: LeaderboardTab = 'global';
 
   get element(): HTMLElement | null {
     return this.root;
   }
 
-  constructor(private readonly events?: LeaderboardEvents) {
-    this.tabs = document.querySelectorAll<HTMLButtonElement>('[data-lb-tab]');
-    for (const tab of Array.from(this.tabs)) {
-      tab.addEventListener('click', () => {
-        const targetTab = tab.dataset['lbTab'] as LeaderboardTab | undefined;
-        if (targetTab && targetTab !== this.currentTab) {
-          this.setTab(targetTab);
-          this.events?.onTabChange(targetTab);
-        }
-      });
-    }
-  }
-
   get activeTab(): LeaderboardTab {
-    return this.currentTab;
+    return 'global';
   }
 
-  setTab(tab: LeaderboardTab): void {
-    this.currentTab = tab;
-    for (const btn of Array.from(this.tabs)) {
-      const isActive = btn.dataset['lbTab'] === tab;
-      btn.classList.toggle('is-active', isActive);
-      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    }
-  }
+  constructor(_events?: LeaderboardEvents) {}
 
   render(summary: LeaderboardSummary): void {
     if (!this.tbody) return;
