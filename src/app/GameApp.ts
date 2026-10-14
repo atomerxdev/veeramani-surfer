@@ -43,9 +43,11 @@ import { CollectibleManager } from '../gameplay/CollectibleManager';
 import { PowerUpManager, type PowerUpKind } from '../gameplay/PowerUpManager';
 import { DifficultyManager } from '../gameplay/DifficultyManager';
 import { TrackManager } from '../gameplay/TrackManager';
-import { ScoreManager } from '../gameplay/ScoreManager';
+import { ScoreManager, type RunResult } from '../gameplay/ScoreManager';
 import { ChaseManager } from '../gameplay/ChaseManager';
 import { EffectsPool } from '../gameplay/Effects';
+import { LeaderboardService } from '../gameplay/leaderboard/LeaderboardService';
+import type { LeaderboardTab } from '../gameplay/leaderboard/LeaderboardTypes';
 import { boxesOverlap, type Collider } from '../gameplay/CollisionSystem';
 import { UIManager } from '../ui/UIManager';
 import type { SettingsChange } from '../ui/SettingsController';
@@ -100,6 +102,9 @@ export class GameApp {
 
   private quality: GraphicsQuality;
   private qualityProfile: QualityProfile;
+  private readonly leaderboard: LeaderboardService;
+  private lastRunResult: RunResult | null = null;
+  private lastRunTime = 0;
   private runDistance = 0;
   private runTime = 0;
   private milestone20Triggered = false;
@@ -192,6 +197,8 @@ export class GameApp {
       onAction: (action) => this.handleAction(action),
     });
 
+    this.leaderboard = new LeaderboardService(this.storage.rawStorage);
+
     this.ui = new UIManager(
       {
         onPlay: () => this.startIntro(),
@@ -202,12 +209,20 @@ export class GameApp {
         onTutorial: () => this.showTutorial(),
         onOpenSettings: () => this.openSettings(),
         onCloseSettings: () => this.closeSettings(),
+        onLeaderboard: () => this.openLeaderboard(),
+        onCloseLeaderboard: () => this.closeLeaderboard(),
+        onSubmitScore: () => void this.handleSubmitScore(),
+        onLeaderboardTabChange: (tab) => void this.refreshLeaderboard(tab),
+        onRandomName: () => this.handleRandomName(),
+        onPlayerNameChanged: (name) => this.handlePlayerNameChanged(name),
         onToggleMute: () => this.toggleMute(),
         onResetData: () => this.resetSavedData(),
         onSettingsChanged: (change) => this.applySettings(change),
+        onUserGesture: () => void this.audio.unlock(),
       },
       { touchDevice: detectTouch() },
-    );    this.ui.syncProfile(this.storage.get());
+    );
+    this.ui.syncProfile(this.storage.get());
     this.ui.setGameState(this.state.current);
 
     this.loop = new GameLoop(
@@ -230,6 +245,7 @@ export class GameApp {
     this.state.transition('MainMenu');
     this.ui.setGameState('MainMenu');
     this.ui.setSeedLabel(this.forcedSeed);
+    this.ui.menu.setPlayerName(this.leaderboard.getPlayerName());
   }
 
   start(): void {
@@ -240,10 +256,11 @@ export class GameApp {
    * Create/resume the audio context. Must be called from a user gesture - the
    * entry point calls it on the first pointer or key event.
    */
-  async unlockAudio(): Promise<void> {
-    await this.audio.unlock();
+  async unlockAudio(): Promise<boolean> {
+    const running = await this.audio.unlock();
     if (this.storage.getSettings().sound) this.audio.startAmbience();
     this.audio.setAmbienceLevel(0.5);
+    return running;
   }
 
   /**
@@ -283,8 +300,10 @@ export class GameApp {
     this.audio.playIntroTrack(introAudioUrl);
     this.cameraController.setIntroVlogPose(1, this.cameraTarget());
     this.audio.play('start');
-    this.audio.startAmbience();
-    this.audio.setAmbienceLevel(1);
+    if (this.storage.getSettings().sound) {
+      this.audio.startAmbience();
+      this.audio.setAmbienceLevel(1);
+    }
     this.input.setEnabled(true);
   }
 
@@ -333,8 +352,10 @@ export class GameApp {
     this.ui.setGameState('Playing');
     this.ui.announce('Run started. Three lanes, jump the low barriers, slide under the banners.');
     this.audio.play('start');
-    this.audio.startAmbience();
-    this.audio.setAmbienceLevel(1);
+    if (this.storage.getSettings().sound) {
+      this.audio.startAmbience();
+      this.audio.setAmbienceLevel(1);
+    }
     this.input.setEnabled(true);
   }
 
@@ -363,6 +384,7 @@ export class GameApp {
     this.state.transition('MainMenu');
     this.ui.setGameState('MainMenu');
     this.ui.syncProfile(this.storage.get());
+    this.ui.menu.setPlayerName(this.leaderboard.getPlayerName());
     this.input.setEnabled(false);
     this.chase.setVisible(false);
     this.player.setIdle(false);
@@ -392,6 +414,64 @@ export class GameApp {
     this.ui.setGameState(returnState);
     this.input.setEnabled(returnState === 'Playing');
     this.ui.syncProfile(this.storage.get());
+  }
+
+  openLeaderboard(): void {
+    this.state.transition('Leaderboard');
+    this.ui.setGameState('Leaderboard');
+    this.input.setEnabled(false);
+    void this.refreshLeaderboard(this.ui.leaderboard.activeTab);
+    this.audio.play('click');
+    this.ui.announce('Leaderboard open');
+  }
+
+  closeLeaderboard(): void {
+    const returnState = this.state.leaderboardReturnState;
+    this.state.transition(returnState);
+    this.ui.setGameState(returnState);
+    this.input.setEnabled(returnState === 'Playing');
+    if (returnState === 'MainMenu') {
+      this.ui.syncProfile(this.storage.get());
+    }
+    this.audio.play('click');
+  }
+
+  async refreshLeaderboard(tab: LeaderboardTab): Promise<void> {
+    const summary = await this.leaderboard.getLeaderboard(tab);
+    this.ui.leaderboard.render(summary);
+  }
+
+  private async handleSubmitScore(): Promise<void> {
+    if (!this.lastRunResult) return;
+    const name = this.leaderboard.getPlayerName();
+
+    const res = await this.leaderboard.submitScore({
+      name,
+      score: this.lastRunResult.score,
+      distance: this.lastRunResult.distance,
+      tokens: this.lastRunResult.tokens,
+      runTimeSeconds: Math.max(1, Math.floor(this.lastRunTime)),
+    });
+
+    if (res.success) {
+      this.audio.play('click');
+      const rankMsg = res.localRank ? `Saved as ${name} • Rank #${res.localRank}` : `Saved to leaderboard as ${name}!`;
+      this.ui.gameover.showSaved(rankMsg, true);
+      this.ui.announce(rankMsg);
+    } else {
+      this.ui.gameover.showSaved(`Recorded locally as ${name}`, false);
+    }
+  }
+
+  private handleRandomName(): void {
+    const newName = this.leaderboard.rollRandomPlayerName();
+    this.ui.menu.setPlayerName(newName);
+    this.audio.play('click');
+    this.ui.announce(`Runner name changed to ${newName}`);
+  }
+
+  private handlePlayerNameChanged(name: string): void {
+    this.leaderboard.setPlayerName(name);
   }
 
   /* -------------------------------------------------------------- settings */
@@ -525,6 +605,7 @@ export class GameApp {
       case 'MainMenu':
       case 'Tutorial':
       case 'Settings':
+      case 'Leaderboard':
         this.simulateAttract(dt);
         break;
       case 'Loading':
@@ -798,6 +879,8 @@ export class GameApp {
     this.audio.play('gameOver', 1.2);
     this.audio.setAmbienceLevel(0.2);
     const result = this.score.finish();
+    this.lastRunResult = result;
+    this.lastRunTime = this.runTime;
     this.updateHud();
     this.ui.showGameOver({ ...result, reason });
     this.state.transition('GameOver');
@@ -805,6 +888,30 @@ export class GameApp {
     this.input.setEnabled(false);
     this.chase.setVisible(true);
     this.ui.announce(`Run over. Score ${result.score}. Best ${result.best}.`);
+
+    // Automatically submit score using the runner username set in the Main Menu
+    const runnerName = this.leaderboard.getPlayerName();
+    this.ui.gameover.showSaving(runnerName);
+
+    void (async () => {
+      const res = await this.leaderboard.submitScore({
+        name: runnerName,
+        score: result.score,
+        distance: result.distance,
+        tokens: result.tokens,
+        runTimeSeconds: Math.max(1, Math.floor(this.lastRunTime)),
+      });
+
+      if (res.success) {
+        const rankMsg = res.localRank
+          ? `Saved as ${runnerName} • Rank #${res.localRank}`
+          : `Saved to Leaderboard as ${runnerName}!`;
+        this.ui.gameover.showSaved(rankMsg, true);
+        this.ui.announce(rankMsg);
+      } else {
+        this.ui.gameover.showSaved(`Recorded locally as ${runnerName}`, false);
+      }
+    })();
   }
 
   private triggerMilestone20(): void {
@@ -827,6 +934,7 @@ export class GameApp {
   private endMilestone20(): void {
     if (!this.milestone20Active) return;
     this.milestone20Active = false;
+    this.audio.stopAfter20Track();
     this.track.setHazardSpawnEnabled(true);
   }
 

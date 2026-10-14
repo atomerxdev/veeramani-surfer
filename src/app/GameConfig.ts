@@ -204,12 +204,12 @@ export const GameConfig: GameConfigShape = {
     laneCount: 3,
     laneWidth: 2.6,
     segmentLength: 26,
-    activeSegments: 5,
-    recycleZ: 26,
-    // > camera.offsetZ (8.2): the street is already under the camera on frame 1.
-    startBehindZ: 13,
+    activeSegments: 8,
+    recycleZ: 48,
+    // > camera.offsetZ (8.2): the street extends 26m behind the runner on frame 1 and never drops below 22m.
+    startBehindZ: 26,
     roadHalfWidth: 4.6,
-    cullZ: 26,
+    cullZ: 45,
     fogNear: 48,
     fogFar: 138,
     defaultSeed: 20261013,

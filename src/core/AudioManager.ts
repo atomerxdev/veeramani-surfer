@@ -72,6 +72,9 @@ export class AudioManager {
   /**
    * Play recorded intro audio track (vlog voiceover).
    */
+  /**
+   * Play recorded intro audio track (vlog voiceover).
+   */
   playIntroTrack(src: string): void {
     if (typeof Audio === 'undefined') return;
     try {
@@ -79,10 +82,17 @@ export class AudioManager {
       const audio = new Audio(src);
       audio.volume = this.mutedState ? 0 : this.volume;
       this.introAudio = audio;
+      audio.addEventListener(
+        'ended',
+        () => {
+          this.stopIntroTrack();
+        },
+        { once: true },
+      );
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          /* ignore autoplay restrictions */
+          // Will retry on next user gesture in unlock() if currentTime is 0
         });
       }
     } catch {
@@ -103,7 +113,7 @@ export class AudioManager {
   }
 
   /**
-   * Play recorded 20-second milestone track ('after 20.mp3').
+   * Play recorded 20-second milestone track ('after 20.mp3') strictly once.
    */
   playAfter20Track(src: string, onEnded?: () => void): void {
     if (typeof Audio === 'undefined') return;
@@ -112,13 +122,18 @@ export class AudioManager {
       const audio = new Audio(src);
       audio.volume = this.mutedState ? 0 : this.volume;
       this.after20Audio = audio;
-      if (onEnded) {
-        audio.addEventListener('ended', onEnded, { once: true });
-      }
+      audio.addEventListener(
+        'ended',
+        () => {
+          this.stopAfter20Track();
+          onEnded?.();
+        },
+        { once: true },
+      );
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          /* ignore autoplay restrictions */
+          // Will retry on next user gesture in unlock() if currentTime is 0
         });
       }
     } catch {
@@ -144,23 +159,44 @@ export class AudioManager {
 
   /**
    * Create/resume the AudioContext. Must be called from a user gesture handler.
+   * Returns true if the AudioContext is confirmed running.
    */
-  async unlock(): Promise<void> {
-    if (!this.supported) return;
-    if (!this.ctx) {
-      const Ctor = getAudioContextCtor();
-      if (!Ctor) return;
-      this.ctx = new Ctor();
-      this.master = this.ctx.createGain();
-      this.master.gain.value = this.mutedState ? 0 : this.volume;
-      this.master.connect(this.ctx.destination);
-    }
-    if (this.ctx.state === 'suspended') {
-      try {
-        await this.ctx.resume();
-      } catch {
-        /* ignore: the next gesture will retry */
+  async unlock(): Promise<boolean> {
+    if (!this.supported) return false;
+    try {
+      if (!this.ctx) {
+        const Ctor = getAudioContextCtor();
+        if (!Ctor) return false;
+        this.ctx = new Ctor();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = this.mutedState ? 0 : this.volume;
+        this.master.connect(this.ctx.destination);
       }
+      if (this.ctx.state === 'suspended') {
+        await this.ctx.resume();
+      }
+      // Retry pending HTML audio elements ONLY if blocked before starting (not ended, not already progressed)
+      if (
+        !this.mutedState &&
+        this.introAudio &&
+        this.introAudio.paused &&
+        !this.introAudio.ended &&
+        this.introAudio.currentTime === 0
+      ) {
+        void this.introAudio.play().catch(() => {});
+      }
+      if (
+        !this.mutedState &&
+        this.after20Audio &&
+        this.after20Audio.paused &&
+        !this.after20Audio.ended &&
+        this.after20Audio.currentTime === 0
+      ) {
+        void this.after20Audio.play().catch(() => {});
+      }
+      return this.ctx.state === 'running';
+    } catch {
+      return false;
     }
   }
 
@@ -192,7 +228,18 @@ export class AudioManager {
 
   /** Ambient market bed: filtered noise with a slow swell. Safe to call twice. */
   startAmbience(): void {
-    if (!this.supported || !this.ctx || !this.master || this.ambienceSource) return;
+    if (!this.supported || this.ambienceSource || this.mutedState) return;
+    if (!this.ctx || !this.master) {
+      void this.unlock().then((running) => {
+        if (running && !this.ambienceSource && !this.mutedState) {
+          this.startAmbience();
+        }
+      });
+      return;
+    }
+    if (this.ctx.state === 'suspended') {
+      void this.ctx.resume();
+    }
     const ctx = this.ctx;
     const buffer = this.getNoiseBuffer();
     if (!buffer) return;
@@ -245,7 +292,14 @@ export class AudioManager {
   }
 
   play(name: SoundName, intensity = 1): void {
-    if (!this.supported || !this.ctx || !this.master || this.mutedState) return;
+    if (!this.supported || this.mutedState) return;
+    if (!this.ctx || !this.master) {
+      void this.unlock();
+      return;
+    }
+    if (this.ctx.state === 'suspended') {
+      void this.ctx.resume();
+    }
     const ctx = this.ctx;
     const t = ctx.currentTime;
     const boost = Math.min(Math.max(intensity, 0.2), 2);

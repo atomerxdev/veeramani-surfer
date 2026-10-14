@@ -128,6 +128,10 @@ export class StorageManager {
     }
   }
 
+  get rawStorage(): StorageLike | null {
+    return this.storage;
+  }
+
   get(): StoredProfile {
     return this.profile;
   }

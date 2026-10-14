@@ -72,6 +72,24 @@ describe('GameStateMachine', () => {
     expect(menu.current).toBe('MainMenu');
   });
 
+  it('remembers where leaderboard was opened from', () => {
+    const fromMenu = new GameStateMachine();
+    fromMenu.transition('MainMenu');
+    expect(fromMenu.transition('Leaderboard')).toBe(true);
+    expect(fromMenu.leaderboardReturnState).toBe('MainMenu');
+    expect(fromMenu.transition(fromMenu.leaderboardReturnState)).toBe(true);
+    expect(fromMenu.current).toBe('MainMenu');
+
+    const fromGameOver = new GameStateMachine();
+    fromGameOver.transition('MainMenu');
+    fromGameOver.transition('Playing');
+    fromGameOver.transition('GameOver');
+    expect(fromGameOver.transition('Leaderboard')).toBe(true);
+    expect(fromGameOver.leaderboardReturnState).toBe('GameOver');
+    expect(fromGameOver.transition(fromGameOver.leaderboardReturnState)).toBe(true);
+    expect(fromGameOver.current).toBe('GameOver');
+  });
+
   it('notifies listeners and unsubscribes cleanly', () => {
     const machine = new GameStateMachine();
     const listener = vi.fn();

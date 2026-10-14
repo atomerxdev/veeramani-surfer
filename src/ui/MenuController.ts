@@ -1,6 +1,6 @@
 /**
- * Main menu controller: best score / distance / run count, and the sound toggle.
- * Buttons themselves are wired by UIManager's delegated click handler.
+ * Main menu controller: best score / distance / run count, sound toggle,
+ * and the runner nickname input field.
  */
 
 import type { StoredProfile } from '../core/StorageManager';
@@ -12,6 +12,9 @@ export class MenuController {
   private readonly runs = bindTarget(document, 'menu-runs');
   private readonly muteButton = document.querySelector<HTMLButtonElement>(
     '[data-action="toggle-mute"]',
+  );
+  private readonly playerNameInput = document.querySelector<HTMLInputElement>(
+    '#menu-player-name',
   );
 
   sync(profile: StoredProfile): void {
@@ -25,5 +28,15 @@ export class MenuController {
     if (!this.muteButton) return;
     this.muteButton.textContent = muted ? 'Sound: off' : 'Sound: on';
     this.muteButton.setAttribute('aria-pressed', String(muted));
+  }
+
+  setPlayerName(name: string): void {
+    if (this.playerNameInput) {
+      this.playerNameInput.value = name;
+    }
+  }
+
+  getPlayerName(): string {
+    return this.playerNameInput?.value.trim() ?? '';
   }
 }

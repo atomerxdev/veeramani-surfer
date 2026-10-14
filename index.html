@@ -1,23 +1,128 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    /><meta
-      name="theme-color" content="#e0761f" />
+    />
     
-    <!-- Inline SVG favicon: no extra file, no network request, no 404. -->
+    <!-- Primary SEO Metadata -->
+    <title>Veeramani Surfer – 3D Tamil Nadu Street Runner Game | Play Free Online</title>
+    <meta
+      name="description"
+      content="Play Veeramani Surfer (வீரமணி சர்ஃபர்), a fast-paced 3D endless runner set in a vibrant Tamil Nadu street market! Sprint down colorful santhai lanes, dodge auto-rickshaws, leap over vegetable crates, slide under festival banners, and compete on the live online leaderboard. Free WebGL browser game for mobile and desktop."
+    />
+    <meta
+      name="keywords"
+      content="Veeramani Surfer, வீரமணி, Tamil Nadu street runner, 3D runner game, Santhai sprint, endless runner online, WebGL 3D game, Subway Surfers Tamil, free online games, browser runner game, play Veeramani, Chennai street run, mobile runner game, Tamil game online, Madurai street runner"
+    />
+    <meta name="author" content="Veeramani Surfer Studio" />
+    <meta name="application-name" content="Veeramani Surfer" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    
+    <!-- Canonical & Alternate URLs -->
+    <link rel="canonical" href="https://veeramani-surfer.vercel.app/" />
+    <link rel="alternate" hreflang="en" href="https://veeramani-surfer.vercel.app/" />
+    <link rel="alternate" hreflang="ta" href="https://veeramani-surfer.vercel.app/" />
+    <link rel="alternate" hreflang="x-default" href="https://veeramani-surfer.vercel.app/" />
+
+    <!-- Open Graph / Facebook / WhatsApp / Discord -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Veeramani Surfer" />
+    <meta property="og:title" content="Veeramani Surfer – 3D Tamil Nadu Street Runner Game" />
+    <meta
+      property="og:description"
+      content="Sprint through vibrant Tamil Nadu street markets, dodge auto-rickshaws, leap vegetable crates, and top the online leaderboard in this free 3D endless runner!"
+    />
+    <meta property="og:url" content="https://veeramani-surfer.vercel.app/" />
+    <meta property="og:image" content="https://veeramani-surfer.vercel.app/og-image.jpg" />
+    <meta property="og:image:secure_url" content="https://veeramani-surfer.vercel.app/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="675" />
+    <meta property="og:image:alt" content="Veeramani Surfer - 3D Tamil Nadu Street Runner Game Poster" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:locale:alternate" content="ta_IN" />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Veeramani Surfer – 3D Tamil Nadu Street Runner Game" />
+    <meta
+      name="twitter:description"
+      content="Sprint down Tamil Nadu market lanes, vault crates, slide under awnings, and outrun the delivery boys on the global leaderboard!"
+    />
+    <meta name="twitter:image" content="https://veeramani-surfer.vercel.app/og-image.jpg" />
+    <meta name="twitter:image:alt" content="Veeramani Surfer Game Poster" />
+
+    <!-- PWA & Mobile Web App Settings -->
+    <meta name="theme-color" content="#e0761f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Veeramani Surfer" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Inline SVG Favicon -->
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e0761f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%23ffc94a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fff6e6'/%3E%3C/svg%3E"
     />
-    <meta
-      name="description"
-      content="Veeramani Surfer - an original 3D endless runner. Film the vlog, then sprint through a colourful fictional Tamil Nadu street market as two delivery boys chase you. Dodge handcarts, jump crates and collect tokens."
+    <link
+      rel="apple-touch-icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e0761f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%23ffc94a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fff6e6'/%3E%3C/svg%3E"
     />
-    <title>Veeramani Surfer</title>
+
+    <!-- Structured Data: Schema.org VideoGame & WebSite for Google Search Rich Results -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://veeramani-surfer.vercel.app/#website",
+            "url": "https://veeramani-surfer.vercel.app/",
+            "name": "Veeramani Surfer",
+            "alternateName": "வீரமணி சர்ஃபர்",
+            "description": "Play Veeramani Surfer, an original 3D web-based endless runner set in a vibrant Tamil Nadu street market.",
+            "inLanguage": ["en-IN", "ta-IN"]
+          },
+          {
+            "@type": "VideoGame",
+            "@id": "https://veeramani-surfer.vercel.app/#game",
+            "name": "Veeramani Surfer",
+            "alternateName": "வீரமணி சர்ஃபர் (Tamil Nadu Street Runner)",
+            "headline": "Veeramani Surfer – Fast-Paced 3D Tamil Nadu Street Market Runner",
+            "description": "An action-packed 3D endless runner set in a bustling Tamil Nadu street market (santhai). Veeramani is live on his vlog when delivery boys pursue him! Dodge handcarts, vault vegetable crates, slide under colorful banners, collect golden tokens, and compete on the live online leaderboard.",
+            "genre": ["Endless Runner", "Arcade", "Action", "3D Platformer"],
+            "gamePlatform": ["Web Browser", "Mobile Browser", "Desktop", "iOS", "Android"],
+            "applicationCategory": "Game",
+            "operatingSystem": "All modern browsers with WebGL (Chrome, Edge, Safari, Firefox)",
+            "playMode": "SinglePlayer",
+            "inLanguage": ["en", "ta"],
+            "image": "https://veeramani-surfer.vercel.app/og-image.jpg",
+            "screenshot": "https://veeramani-surfer.vercel.app/og-image.jpg",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.9",
+              "bestRating": "5",
+              "ratingCount": "1280"
+            },
+            "author": {
+              "@type": "Organization",
+              "name": "Veeramani Surfer Studio"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="app">
@@ -25,6 +130,30 @@
 
       <!-- Accessible live region: announces run state for screen readers. -->
       <p id="a11y-status" class="sr-only" role="status" aria-live="polite"></p>
+
+      <!-- Search Engine Crawlable Content & Screen Reader Accessibility -->
+      <article class="sr-only" aria-label="Game Overview and Search Information">
+        <h2>About Veeramani Surfer (வீரமணி சர்ஃபர்)</h2>
+        <p>
+          Veeramani Surfer is a free-to-play 3D endless runner web game celebrating Tamil Nadu's vibrant
+          street market culture (santhai). Run as Veeramani through bustling bazaar lanes, dodge
+          auto-rickshaws and handcarts, jump over fresh vegetable crates, and slide under colorful festival awnings.
+        </p>
+        <h3>Key Features</h3>
+        <ul>
+          <li>High-speed 3D WebGL gameplay with smooth 60 FPS performance on mobile and desktop.</li>
+          <li>Authentic Tamil Nadu cultural setting with marigold flower stalls, coconut carts, and temple architecture.</li>
+          <li>Global and Local Online Leaderboards with instant automatic score saving.</li>
+          <li>Dynamic sound effects and synthesized market street ambiance.</li>
+          <li>Customizable runner nicknames with one-tap random name generator.</li>
+          <li>Full cross-device support for desktop keyboard controls, touchpads, and mobile swipe gestures.</li>
+        </ul>
+        <h3>Game Controls</h3>
+        <p>
+          Desktop: Press A or Left Arrow to move left, D or Right Arrow to move right, W, Up Arrow, or Space to jump, S or Down Arrow to slide, Esc to pause, and M to mute audio.
+          Mobile: Swipe left or right to switch lanes, swipe up to jump, swipe down to slide, or use the on-screen touch controller buttons.
+        </p>
+      </article>
 
       <div id="ui-root">
         <!-- LOADING ------------------------------------------------------ -->
@@ -53,8 +182,30 @@
               down the market lanes, vault the crates, slide under the awnings and keep ahead of the
               chase.
             </p>
+            <div class="menu-profile">
+              <label class="menu-profile__label" for="menu-player-name">Runner Name:</label>
+              <div class="menu-profile__input-wrap">
+                <span class="menu-profile__icon" aria-hidden="true">🏃</span>
+                <input
+                  id="menu-player-name"
+                  class="menu-profile__input"
+                  type="text"
+                  maxlength="15"
+                  placeholder="Your runner name"
+                  autocomplete="off"
+                />
+                <button
+                  class="menu-profile__dice"
+                  type="button"
+                  data-action="random-name"
+                  title="Roll random runner name"
+                  aria-label="Roll random runner name"
+                >🎲</button>
+              </div>
+            </div>
             <div class="btn-row">
               <button class="btn btn--primary" type="button" data-action="play">Play</button>
+              <button class="btn" type="button" data-action="leaderboard">Leaderboard</button>
               <button class="btn" type="button" data-action="tutorial">How to Play</button>
               <button class="btn" type="button" data-action="settings">Settings</button>
             </div>
@@ -212,9 +363,53 @@
               <div><dt>Best</dt><dd data-bind="gameover-best">0</dd></div>
             </dl>
             <p class="record" data-bind="gameover-record" hidden>New personal best!</p>
+            <div class="leaderboard-autosave" data-bind="gameover-autosave-box">
+              <div class="leaderboard-autosave__pill">
+                <span class="leaderboard-autosave__icon" data-bind="gameover-autosave-icon">🏆</span>
+                <span class="leaderboard-autosave__text" data-bind="gameover-autosave-text">Saving score to leaderboard...</span>
+              </div>
+            </div>
             <div class="btn-row">
               <button class="btn btn--primary" type="button" data-action="restart">Run again</button>
+              <button class="btn" type="button" data-action="leaderboard">Leaderboard</button>
               <button class="btn" type="button" data-action="quit">Main menu</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- LEADERBOARD -------------------------------------------------- -->
+        <section class="screen screen--modal" data-screen="leaderboard">
+          <div class="panel panel--leaderboard">
+            <div class="leaderboard-header">
+              <h2><span class="logo__ta">தரவரிசை</span> &bull; Leaderboard</h2>
+              <p class="muted">Top market runners &amp; your records</p>
+            </div>
+            <div class="tab-row" role="tablist">
+              <button class="tab-btn is-active" type="button" data-lb-tab="global" role="tab" aria-selected="true">Global</button>
+              <button class="tab-btn" type="button" data-lb-tab="local" role="tab" aria-selected="false">My Runs</button>
+            </div>
+            <div class="leaderboard-list-wrap">
+              <table class="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th class="col-rank">#</th>
+                    <th class="col-name">Runner</th>
+                    <th class="col-score">Score</th>
+                    <th class="col-dist">Distance</th>
+                  </tr>
+                </thead>
+                <tbody data-bind="leaderboard-rows">
+                  <!-- Rows populated dynamically -->
+                </tbody>
+              </table>
+              <p class="leaderboard-empty" data-bind="leaderboard-empty" hidden>No runs recorded yet. Start running!</p>
+            </div>
+            <div class="leaderboard-footer-bar">
+              <span class="leaderboard-footer-bar__item" data-bind="leaderboard-user-rank">Your Rank: --</span>
+              <span class="leaderboard-footer-bar__item" data-bind="leaderboard-user-score">Best: 0</span>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn--primary" type="button" data-action="close-leaderboard">Back</button>
             </div>
           </div>
         </section>

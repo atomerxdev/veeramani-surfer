@@ -61,14 +61,21 @@ function boot(): void {
     app.start();
     window.__SANTHAI__ = app;
 
-    // The first user gesture unlocks audio (browser autoplay policy).
-    const unlock = (): void => {
-      void app.unlockAudio();
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
+    // User gestures unlock audio (respects browser autoplay policy).
+    // Keep listeners active until the AudioContext is confirmed running.
+    const unlock = async (): Promise<void> => {
+      const running = await app.unlockAudio();
+      if (running) {
+        window.removeEventListener('pointerdown', unlock);
+        window.removeEventListener('click', unlock);
+        window.removeEventListener('keydown', unlock);
+        window.removeEventListener('touchstart', unlock);
+      }
     };
     window.addEventListener('pointerdown', unlock);
+    window.addEventListener('click', unlock);
     window.addEventListener('keydown', unlock);
+    window.addEventListener('touchstart', unlock);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     showFatal(message);

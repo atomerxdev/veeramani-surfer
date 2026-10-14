@@ -9,6 +9,7 @@ export type GameStateName =
   | 'MainMenu'
   | 'Tutorial'
   | 'Settings'
+  | 'Leaderboard'
   | 'Intro'
   | 'Playing'
   | 'Paused'
@@ -30,13 +31,14 @@ type Listener = (change: StateChange) => void;
  */
 const ALLOWED: Record<GameStateName, readonly GameStateName[]> = {
   Loading: ['MainMenu', 'Tutorial', 'Playing'],
-  MainMenu: ['Intro', 'Playing', 'Tutorial', 'Settings', 'Loading'],
+  MainMenu: ['Intro', 'Playing', 'Tutorial', 'Settings', 'Leaderboard', 'Loading'],
   Tutorial: ['Intro', 'Playing', 'MainMenu'],
-  Settings: ['MainMenu', 'Paused'],
+  Settings: ['MainMenu', 'Paused', 'GameOver'],
+  Leaderboard: ['MainMenu', 'GameOver', 'Playing'],
   Intro: ['Playing'],
   Playing: ['Paused', 'GameOver', 'MainMenu'],
   Paused: ['Playing', 'GameOver', 'MainMenu', 'Settings'],
-  GameOver: ['Playing', 'MainMenu', 'Settings'],
+  GameOver: ['Playing', 'MainMenu', 'Settings', 'Leaderboard'],
 };
 
 export class GameStateMachine {
@@ -55,6 +57,13 @@ export class GameStateMachine {
     return this.settingsReturn;
   }
 
+  /** State to return to when the leaderboard screen is closed. */
+  private leaderboardReturn: GameStateName = 'MainMenu';
+
+  get leaderboardReturnState(): GameStateName {
+    return this.leaderboardReturn;
+  }
+
   canTransition(to: GameStateName): boolean {
     if (to === this.state) return false;
     return ALLOWED[this.state].includes(to);
@@ -63,8 +72,11 @@ export class GameStateMachine {
   transition(to: GameStateName): boolean {
     if (!this.canTransition(to)) return false;
     const from = this.state;
-    if (to === 'Settings' && (from === 'MainMenu' || from === 'Paused')) {
+    if (to === 'Settings' && (from === 'MainMenu' || from === 'Paused' || from === 'GameOver')) {
       this.settingsReturn = from;
+    }
+    if (to === 'Leaderboard' && (from === 'MainMenu' || from === 'GameOver')) {
+      this.leaderboardReturn = from;
     }
     this.state = to;
     this.history.push(to);

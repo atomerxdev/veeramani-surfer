@@ -15,6 +15,8 @@ import { PauseController } from './PauseController';
 import { GameOverController, type GameOverSummary } from './GameOverController';
 import { SettingsController, type SettingsChange } from './SettingsController';
 import { VlogController } from './VlogController';
+import { LeaderboardController } from './LeaderboardController';
+import type { LeaderboardTab } from '../gameplay/leaderboard/LeaderboardTypes';
 import { optionalElement } from './Dom';
 
 export interface UIActions {
@@ -26,9 +28,16 @@ export interface UIActions {
   onTutorial(): void;
   onOpenSettings(): void;
   onCloseSettings(): void;
+  onLeaderboard(): void;
+  onCloseLeaderboard(): void;
+  onSubmitScore?(): void;
+  onLeaderboardTabChange?(tab: LeaderboardTab): void;
+  onRandomName?(): void;
+  onPlayerNameChanged?(name: string): void;
   onToggleMute(): void;
   onResetData(): void;
   onSettingsChanged(change: SettingsChange): void;
+  onUserGesture?(): void;
 }
 
 const ACTION_MAP: Record<string, keyof UIActions> = {
@@ -41,6 +50,10 @@ const ACTION_MAP: Record<string, keyof UIActions> = {
   tutorial: 'onTutorial',
   settings: 'onOpenSettings',
   'close-settings': 'onCloseSettings',
+  leaderboard: 'onLeaderboard',
+  'close-leaderboard': 'onCloseLeaderboard',
+  'submit-score': 'onSubmitScore',
+  'random-name': 'onRandomName',
   'toggle-mute': 'onToggleMute',
   'reset-data': 'onResetData',
 };
@@ -54,6 +67,7 @@ export class UIManager {
   readonly gameover = new GameOverController();
   readonly settings = new SettingsController();
   readonly vlog = new VlogController();
+  readonly leaderboard: LeaderboardController;
 
   private readonly screens = new Map<string, HTMLElement>();
   private readonly touchPad = optionalElement<HTMLElement>(document, '[data-touch-pad]');
@@ -68,6 +82,9 @@ export class UIManager {
     private readonly actions: UIActions,
     options: { touchDevice?: boolean } = {},
   ) {
+    this.leaderboard = new LeaderboardController({
+      onTabChange: (tab) => this.actions.onLeaderboardTabChange?.(tab),
+    });
     this.element = optionalElement<HTMLElement>(document, '#ui-root');
     if (!this.element) throw new Error('UI root element is missing');
     this.touchPadEnabled = options.touchDevice ?? false;
@@ -79,6 +96,7 @@ export class UIManager {
 
     this.element.addEventListener('click', this.handleClick);
     this.element.addEventListener('change', this.handleChange);
+    this.element.addEventListener('input', this.handleInput);
     this.applyVisibility();
   }
 
@@ -140,6 +158,7 @@ export class UIManager {
   dispose(): void {
     this.element?.removeEventListener('click', this.handleClick);
     this.element?.removeEventListener('change', this.handleChange);
+    this.element?.removeEventListener('input', this.handleInput);
   }
 
   /* --------------------------------------------------------------- internals */
@@ -158,6 +177,7 @@ export class UIManager {
     this.toggle('hud', showHud && !settingsVisible);
     this.toggle('pause', this.state === 'Paused' && !settingsVisible);
     this.toggle('gameover', this.state === 'GameOver');
+    this.toggle('leaderboard', this.state === 'Leaderboard');
     this.touchPad?.classList.toggle('is-visible', touchPadVisible);
   }
 
@@ -168,6 +188,7 @@ export class UIManager {
   }
 
   private handleClick = (event: MouseEvent): void => {
+    this.actions.onUserGesture?.();
     const target = event.target as HTMLElement | null;
     const button = target?.closest<HTMLElement>('[data-action]');
     if (!button) return;
@@ -182,7 +203,20 @@ export class UIManager {
 
   private handleChange = (event: Event): void => {
     const target = event.target as HTMLElement | null;
+    if (target?.id === 'menu-player-name') {
+      const val = (target as HTMLInputElement).value;
+      this.actions.onPlayerNameChanged?.(val);
+      return;
+    }
     if (!target?.dataset['setting']) return;
     this.actions.onSettingsChanged(this.settings.read());
+  };
+
+  private handleInput = (event: Event): void => {
+    const target = event.target as HTMLElement | null;
+    if (target?.id === 'menu-player-name') {
+      const val = (target as HTMLInputElement).value;
+      this.actions.onPlayerNameChanged?.(val);
+    }
   };
 }
