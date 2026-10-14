@@ -66,7 +66,7 @@ function validatePayload(sub: ScoreSubmission): { valid: boolean; reason?: strin
   return { valid: true };
 }
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'veeramani-admin-2026';
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 function checkAdminAuth(req: any, body?: any): boolean {
   const headerKey = req.headers?.['x-admin-key'] || req.headers?.['X-Admin-Key'];
