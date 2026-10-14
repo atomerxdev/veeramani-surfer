@@ -1,5 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import type { Plugin } from 'vite';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'veeramani-admin-2026';
 
 function leaderboardDevPlugin(): Plugin {
   let devStore: Array<{
@@ -17,10 +22,52 @@ function leaderboardDevPlugin(): Plugin {
       server.middlewares.use('/api/leaderboard', (req: any, res: any) => {
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-key, Authorization');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end();
+          return;
+        }
+
+        const url = new URL(req.url, 'http://localhost');
+        const headerKey = req.headers?.['x-admin-key'];
+        const authHeader = req.headers?.['authorization'];
+        const queryKey = url.searchParams.get('adminKey') || url.searchParams.get('key');
+        const isAdmin =
+          headerKey === ADMIN_SECRET ||
+          (typeof authHeader === 'string' && authHeader.replace(/^Bearer\s+/, '') === ADMIN_SECRET) ||
+          queryKey === ADMIN_SECRET;
 
         if (req.method === 'GET') {
           const ranked = devStore.map((e, index) => ({ ...e, rank: index + 1 }));
-          res.end(JSON.stringify({ success: true, entries: ranked }));
+
+          if (isAdmin) {
+            const totalRuns = ranked.length;
+            const topScore = ranked[0]?.score ?? 0;
+            const topRunner = ranked[0]?.name ?? 'None';
+            const avgDistance = totalRuns > 0 ? Math.round(ranked.reduce((s, e) => s + (e.distance || 0), 0) / totalRuns) : 0;
+            const totalTokens = ranked.reduce((s, e) => s + (e.tokens || 0), 0);
+
+            res.end(
+              JSON.stringify({
+                success: true,
+                isAdmin: true,
+                entries: ranked,
+                stats: {
+                  totalRuns,
+                  topScore,
+                  topRunner,
+                  avgDistance,
+                  totalTokens,
+                },
+              }),
+            );
+            return;
+          }
+
+          res.end(JSON.stringify({ success: true, entries: ranked.slice(0, 50) }));
           return;
         }
 
@@ -32,6 +79,18 @@ function leaderboardDevPlugin(): Plugin {
           req.on('end', () => {
             try {
               const sub = JSON.parse(body);
+
+              // Admin passcode verification
+              if (sub.action === 'verify-admin') {
+                if (sub.key === ADMIN_SECRET) {
+                  res.end(JSON.stringify({ success: true, valid: true }));
+                } else {
+                  res.statusCode = 401;
+                  res.end(JSON.stringify({ success: false, reason: 'Invalid administrative passcode' }));
+                }
+                return;
+              }
+
               const newEntry = {
                 id: sub.deviceId || `dev-${Date.now()}`,
                 name: sub.name || 'Runner',
@@ -59,6 +118,56 @@ function leaderboardDevPlugin(): Plugin {
           return;
         }
 
+        if (req.method === 'DELETE') {
+          let body = '';
+          req.on('data', (chunk: any) => {
+            body += chunk;
+          });
+          req.on('end', () => {
+            let parsedBody: any = {};
+            try {
+              if (body) parsedBody = JSON.parse(body);
+            } catch {
+              /* ignore */
+            }
+
+            const isAuthorized =
+              isAdmin || parsedBody.adminKey === ADMIN_SECRET || parsedBody.key === ADMIN_SECRET;
+            if (!isAuthorized) {
+              res.statusCode = 401;
+              res.end(JSON.stringify({ success: false, reason: 'Unauthorized admin access' }));
+              return;
+            }
+
+            const targetId = url.searchParams.get('id') || parsedBody.id;
+            const purgeAll = url.searchParams.get('all') === 'true' || parsedBody.all === true;
+
+            if (purgeAll) {
+              devStore = [];
+              res.end(JSON.stringify({ success: true, purged: true, entries: [] }));
+              return;
+            }
+
+            if (!targetId) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ success: false, reason: 'Missing id parameter' }));
+              return;
+            }
+
+            const prevLen = devStore.length;
+            devStore = devStore.filter((e) => e.id !== targetId);
+            if (devStore.length === prevLen) {
+              res.statusCode = 404;
+              res.end(JSON.stringify({ success: false, reason: 'Entry not found' }));
+              return;
+            }
+
+            const ranked = devStore.map((e, index) => ({ ...e, rank: index + 1 }));
+            res.end(JSON.stringify({ success: true, deletedId: targetId, entries: ranked }));
+          });
+          return;
+        }
+
         res.statusCode = 405;
         res.end(JSON.stringify({ error: 'Method not allowed' }));
       });
@@ -74,6 +183,12 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: false,
     chunkSizeWarningLimit: 1400,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        admin: resolve(__dirname, 'admin.html'),
+      },
+    },
   },
   server: {
     port: 5173,

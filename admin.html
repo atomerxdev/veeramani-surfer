@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Veeramani Surfer – Admin Command Center</title>
+    <meta name="description" content="Administrative moderation dashboard and telemetry for Veeramani Surfer." />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Inline SVG Favicon -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e0761f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%23ffc94a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fff6e6'/%3E%3C/svg%3E"
+    />
+
+    <link rel="stylesheet" href="/src/styles/admin.css" />
+  </head>
+  <body>
+    <!-- ----------------------------------------------------------------------
+         Passcode Authentication Gate
+         ---------------------------------------------------------------------- -->
+    <div id="auth-screen" class="auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-icon">🔐</div>
+        <h2 class="auth-title">Admin Access Required</h2>
+        <p class="auth-subtitle">
+          Enter the master administrative passcode to access the Veeramani Surfer moderation console.
+        </p>
+
+        <form id="auth-form" class="auth-form" autocomplete="off">
+          <div class="input-group">
+            <label for="admin-passcode" class="input-label">Master Passcode</label>
+            <input
+              type="password"
+              id="admin-passcode"
+              class="input-field"
+              placeholder="Enter passcode..."
+              required
+              autofocus
+            />
+          </div>
+          <button type="submit" class="btn-primary" id="btn-login">
+            <span>Unlock Command Center</span>
+            <span>→</span>
+          </button>
+        </form>
+
+        <div id="auth-error" class="auth-error" role="alert">
+          Incorrect passcode. Please verify your credentials.
+        </div>
+
+        <div class="auth-footer">
+          <span>Configured via environment variable <code>ADMIN_SECRET</code></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         Main Admin Dashboard
+         ---------------------------------------------------------------------- -->
+    <div id="admin-dashboard" class="app-container" style="display: none;">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="brand-group">
+          <div class="brand-icon">🏃</div>
+          <div class="brand-text">
+            <h1>
+              <span>Veeramani Surfer</span>
+              <span class="badge-admin">Admin</span>
+            </h1>
+            <p>Leaderboard Moderation & Telemetry Console</p>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span id="system-status-text">Live Sync</span>
+          </div>
+          <button type="button" class="btn-icon" id="btn-refresh" title="Refresh live scores">
+            <span id="refresh-icon">🔄</span>
+            <span>Refresh</span>
+          </button>
+          <button type="button" class="btn-icon" id="btn-auto-sync" title="Toggle automatic polling">
+            <span>⏱️</span>
+            <span id="auto-sync-text">Auto-Sync (5s)</span>
+          </button>
+          <a href="/" class="btn-icon" title="Return to play game">
+            <span>🎮</span>
+            <span>Play Game</span>
+          </a>
+          <button type="button" class="btn-icon btn-danger" id="btn-logout" title="Lock session">
+            <span>🔒</span>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Metrics Row -->
+      <section class="metrics-grid" aria-label="Key telemetry metrics">
+        <div class="metric-card" style="--card-accent: var(--accent-saffron);">
+          <div class="metric-header">
+            <span class="metric-title">Total Ranked Runs</span>
+            <span class="metric-icon">👥</span>
+          </div>
+          <div class="metric-value" id="metric-total-runs">0</div>
+          <div class="metric-subtitle">Active submissions on leaderboard</div>
+        </div>
+
+        <div class="metric-card" style="--card-accent: var(--accent-marigold);">
+          <div class="metric-header">
+            <span class="metric-title">Global High Score</span>
+            <span class="metric-icon">🏆</span>
+          </div>
+          <div class="metric-value" id="metric-top-score">0</div>
+          <div class="metric-subtitle" id="metric-top-runner">Leader: None</div>
+        </div>
+
+        <div class="metric-card" style="--card-accent: var(--accent-teal);">
+          <div class="metric-header">
+            <span class="metric-title">Average Distance</span>
+            <span class="metric-icon">🛣️</span>
+          </div>
+          <div class="metric-value" id="metric-avg-distance">0 m</div>
+          <div class="metric-subtitle">Per verified street run</div>
+        </div>
+
+        <div class="metric-card" style="--card-accent: var(--accent-indigo);">
+          <div class="metric-header">
+            <span class="metric-title">Total Tokens Looted</span>
+            <span class="metric-icon">🪙</span>
+          </div>
+          <div class="metric-value" id="metric-total-tokens">0</div>
+          <div class="metric-subtitle">Cumulative santhai currency collected</div>
+        </div>
+      </section>
+
+      <!-- Main Leaderboard Registry Table Panel -->
+      <main class="main-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h2 class="panel-title">Leaderboard Registry</h2>
+            <span class="count-badge" id="table-count-badge">0 entries</span>
+          </div>
+
+          <div class="panel-controls">
+            <!-- Search Filter -->
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Search runner or device ID..."
+                aria-label="Filter leaderboard entries"
+              />
+            </div>
+
+            <!-- Tab Filter -->
+            <div class="filter-tabs" role="tablist">
+              <button type="button" class="tab-btn is-active" data-filter="all">All Runs</button>
+              <button type="button" class="tab-btn" data-filter="top10">Top 10</button>
+              <button type="button" class="tab-btn" data-filter="flagged">High Speed (&gt;30m/s)</button>
+            </div>
+
+            <!-- Bulk Export / Purge Actions -->
+            <button type="button" class="btn-icon" id="btn-export-csv" title="Export as CSV spreadsheet">
+              <span>📥</span>
+              <span>CSV</span>
+            </button>
+            <button type="button" class="btn-icon" id="btn-export-json" title="Export as JSON dataset">
+              <span>📄</span>
+              <span>JSON</span>
+            </button>
+            <button type="button" class="btn-icon btn-danger" id="btn-purge-all" title="Purge all leaderboard records">
+              <span>⚠️</span>
+              <span>Purge All</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Responsive Container -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Rank</th>
+                <th>Runner Name</th>
+                <th>Score</th>
+                <th>Distance</th>
+                <th>Tokens</th>
+                <th>Avg Speed</th>
+                <th>Date / Time</th>
+                <th>Device ID</th>
+                <th style="text-align: right; width: 90px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <!-- Rendered via src/admin.ts -->
+            </tbody>
+          </table>
+
+          <!-- Empty State -->
+          <div id="table-empty-state" class="table-empty" style="display: none;">
+            <div class="empty-icon">📭</div>
+            <h3 class="empty-title">No Leaderboard Runs Found</h3>
+            <p class="empty-desc">
+              The leaderboard registry is currently empty or no entries matched your search filter.
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         Custom Confirmation Modal
+         ---------------------------------------------------------------------- -->
+    <div id="confirm-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-icon" id="modal-icon">⚠️</div>
+          <h3 class="modal-title" id="modal-title">Confirm Action</h3>
+        </div>
+        <div class="modal-body" id="modal-message">
+          Are you sure you want to proceed?
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="modal-btn-cancel">Cancel</button>
+          <button type="button" class="btn-danger-solid" id="modal-btn-confirm">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         Toast Notification Hub
+         ---------------------------------------------------------------------- -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <script type="module" src="/src/admin.ts"></script>
+  </body>
+</html>
