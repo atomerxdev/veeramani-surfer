@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ACTIVE_APP_STORAGE_KEYS,
   STORAGE_KEY,
   StorageManager,
   defaultProfile,
+  isAppStorageKey,
+  pruneObsoleteStorage,
   sanitizeProfile,
 } from '../../src/core/StorageManager';
 import { MemoryStorage } from './helpers';
@@ -101,4 +104,87 @@ describe('StorageManager', () => {
     manager.reset();
     expect(new StorageManager(storage).get()).toEqual(defaultProfile());
   });
+
+  it('prunes obsolete keys on StorageManager construction', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('santhai-sprint.leaderboard.local.v1', '[]');
+    storage.setItem('santhai-sprint.profile.v1', JSON.stringify(defaultProfile()));
+
+    new StorageManager(storage);
+
+    expect(storage.getItem('santhai-sprint.leaderboard.local.v1')).toBeNull();
+    expect(storage.getItem('santhai-sprint.profile.v1')).not.toBeNull();
+  });
 });
+
+describe('pruneObsoleteStorage', () => {
+  it('removes keys belonging to the game namespace that are not active', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('santhai-sprint.leaderboard.local.v1', '[]');
+    storage.setItem('santhai-sprint.legacy.scores', '{"old": 1}');
+    storage.setItem('veeramani_old_cache', 'true');
+    storage.setItem('tamil-nadu-old-key', '123');
+    storage.setItem('runner_legacy', 'abc');
+    storage.setItem('santhai-sprint.profile.v1', '{"profile": true}');
+    storage.setItem('santhai-sprint.device.id', 'device-123');
+    storage.setItem('santhai-sprint.player.name', 'SuperRunner');
+    storage.setItem('santhai-sprint.leaderboard.global.cache.v1', '[]');
+    storage.setItem('veeramani_admin_key', 'pass');
+    storage.setItem('unrelated-third-party-key', 'keep me');
+
+    const removed = pruneObsoleteStorage(storage);
+
+    expect(removed).toContain('santhai-sprint.leaderboard.local.v1');
+    expect(removed).toContain('santhai-sprint.legacy.scores');
+    expect(removed).toContain('veeramani_old_cache');
+    expect(removed).toContain('tamil-nadu-old-key');
+    expect(removed).toContain('runner_legacy');
+    expect(removed).toHaveLength(5);
+
+    // Active keys must remain intact
+    expect(storage.getItem('santhai-sprint.profile.v1')).toBe('{"profile": true}');
+    expect(storage.getItem('santhai-sprint.device.id')).toBe('device-123');
+    expect(storage.getItem('santhai-sprint.player.name')).toBe('SuperRunner');
+    expect(storage.getItem('santhai-sprint.leaderboard.global.cache.v1')).toBe('[]');
+    expect(storage.getItem('veeramani_admin_key')).toBe('pass');
+
+    // Unrelated keys must NOT be removed
+    expect(storage.getItem('unrelated-third-party-key')).toBe('keep me');
+  });
+
+  it('safely handles empty storage or storage with no obsolete keys', () => {
+    const storage = new MemoryStorage();
+    expect(pruneObsoleteStorage(storage)).toEqual([]);
+
+    storage.setItem('santhai-sprint.profile.v1', '1');
+    expect(pruneObsoleteStorage(storage)).toEqual([]);
+  });
+
+  it('safely returns empty array when storage is null', () => {
+    expect(pruneObsoleteStorage(null)).toEqual([]);
+  });
+
+  it('correctly matches game storage keys with isAppStorageKey', () => {
+    expect(isAppStorageKey('santhai-sprint.profile.v1')).toBe(true);
+    expect(isAppStorageKey('santhai-sprint.leaderboard.local.v1')).toBe(true);
+    expect(isAppStorageKey('veeramani_admin_key')).toBe(true);
+    expect(isAppStorageKey('runner_settings')).toBe(true);
+    expect(isAppStorageKey('tamil-nadu-street-runner')).toBe(true);
+    expect(isAppStorageKey('global_leaderboard')).toBe(true);
+
+    expect(isAppStorageKey('theme')).toBe(false);
+    expect(isAppStorageKey('ga_client_id')).toBe(false);
+    expect(isAppStorageKey('vite:client-patch')).toBe(false);
+  });
+
+  it('contains all active required keys in ACTIVE_APP_STORAGE_KEYS', () => {
+    expect(ACTIVE_APP_STORAGE_KEYS.has('santhai-sprint.profile.v1')).toBe(true);
+    expect(ACTIVE_APP_STORAGE_KEYS.has('santhai-sprint.device.id')).toBe(true);
+    expect(ACTIVE_APP_STORAGE_KEYS.has('santhai-sprint.player.name')).toBe(true);
+    expect(ACTIVE_APP_STORAGE_KEYS.has('santhai-sprint.leaderboard.global.cache.v1')).toBe(true);
+    expect(ACTIVE_APP_STORAGE_KEYS.has('veeramani_admin_key')).toBe(true);
+    expect(ACTIVE_APP_STORAGE_KEYS.has('santhai-sprint.leaderboard.local.v1')).toBe(false);
+  });
+});
+
+

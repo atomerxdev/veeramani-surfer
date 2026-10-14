@@ -29,11 +29,85 @@ export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  key?(index: number): string | null;
+  length?: number;
+  keys?(): IterableIterator<string> | string[];
 }
 
 export const STORAGE_KEY = 'santhai-sprint.profile.v1';
 export const PROFILE_VERSION = 1;
 const MAX_SCORE = 1_000_000_000;
+
+/** Complete set of active, valid storage keys recognized by the current game program. */
+export const ACTIVE_APP_STORAGE_KEYS = new Set<string>([
+  'santhai-sprint.profile.v1',
+  'santhai-sprint.device.id',
+  'santhai-sprint.player.name',
+  'santhai-sprint.leaderboard.global.cache.v1',
+  'veeramani_admin_key',
+]);
+
+/** Checks whether a localStorage key belongs to this game's namespace or domain. */
+export function isAppStorageKey(key: string): boolean {
+  return (
+    key.startsWith('santhai') ||
+    key.startsWith('veeramani') ||
+    key.startsWith('runner') ||
+    key.startsWith('tamil') ||
+    key.includes('leaderboard')
+  );
+}
+
+/**
+ * Prunes obsolete or legacy localStorage data that no longer exists in the current program.
+ *
+ * Inspects all keys belonging to the game namespace (e.g. "santhai-sprint.", "veeramani", "runner",
+ * "tamil", or legacy "leaderboard") and removes any key not present in the current program's active keys list.
+ *
+ * Returns the array of deleted key names.
+ */
+export function pruneObsoleteStorage(
+  storage: StorageLike | null = safeLocalStorage(),
+  validKeys: ReadonlySet<string> = ACTIVE_APP_STORAGE_KEYS,
+): string[] {
+  if (!storage) return [];
+  const removed: string[] = [];
+
+  try {
+    const allKeys: string[] = [];
+
+    if (typeof storage.keys === 'function') {
+      for (const k of storage.keys()) {
+        allKeys.push(k);
+      }
+    } else if (typeof storage.length === 'number' && typeof storage.key === 'function') {
+      for (let i = 0; i < storage.length; i++) {
+        const k = storage.key(i);
+        if (k) allKeys.push(k);
+      }
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k) allKeys.push(k);
+      }
+    }
+
+    for (const key of allKeys) {
+      if (isAppStorageKey(key) && !validKeys.has(key)) {
+        try {
+          storage.removeItem(key);
+          removed.push(key);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  } catch {
+    /* ignore storage access restrictions */
+  }
+
+  return removed;
+}
 
 export function defaultProfile(): StoredProfile {
   return {
@@ -113,6 +187,7 @@ export class StorageManager {
     private readonly key: string = STORAGE_KEY,
   ) {
     this.persistent = storage !== null;
+    pruneObsoleteStorage(storage);
     this.profile = this.read();
   }
 

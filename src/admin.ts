@@ -5,6 +5,8 @@
  * individual run deletion, whole-store purges, telemetry aggregation, and CSV/JSON exports.
  */
 
+import { pruneObsoleteStorage } from './core/StorageManager';
+
 interface AdminLeaderboardEntry {
   id: string;
   name: string;
@@ -70,6 +72,7 @@ export class AdminDashboard {
   private toastContainer = document.getElementById('toast-container') as HTMLElement;
 
   constructor() {
+    pruneObsoleteStorage();
     this.initEvents();
     this.checkStoredAuth();
   }

@@ -8,6 +8,7 @@
 import './styles/main.css';
 import { GameApp } from './app/GameApp';
 import { inject } from '@vercel/analytics';
+import { pruneObsoleteStorage } from './core/StorageManager';
 
 declare global {
   interface Window {
@@ -36,6 +37,9 @@ function showFatal(message: string): void {
 }
 
 function boot(): void {
+  // Prune any obsolete localStorage keys from removed features (e.g. legacy local leaderboard)
+  pruneObsoleteStorage();
+
   // Initialize Vercel Web Analytics
   inject();
 

@@ -5,7 +5,7 @@
  * device identification, automatic username generation, and online API syncing.
  */
 
-import { safeLocalStorage, type StorageLike } from '../../core/StorageManager';
+import { pruneObsoleteStorage, safeLocalStorage, type StorageLike } from '../../core/StorageManager';
 import type {
   LeaderboardEntry,
   LeaderboardSummary,
@@ -241,12 +241,8 @@ export class LeaderboardService {
   private readGlobalCache(): LeaderboardEntry[] {
     let list: LeaderboardEntry[] = [];
     if (this.storage) {
-      // Purge any stale legacy local leaderboard data from localStorage
-      try {
-        this.storage.removeItem('santhai-sprint.leaderboard.local.v1');
-      } catch {
-        /* ignore */
-      }
+      // Purge any stale legacy localStorage data from removed features
+      pruneObsoleteStorage(this.storage);
 
       try {
         const raw = this.storage.getItem(GLOBAL_CACHE_KEY);

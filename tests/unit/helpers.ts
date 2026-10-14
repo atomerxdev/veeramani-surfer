@@ -24,6 +24,23 @@ export class MemoryStorage implements StorageLike {
   seed(key: string, value: string): void {
     this.data.set(key, value);
   }
+
+  clear(): void {
+    this.data.clear();
+  }
+
+  get length(): number {
+    return this.data.size;
+  }
+
+  key(index: number): string | null {
+    const keys = Array.from(this.data.keys());
+    return keys[index] ?? null;
+  }
+
+  keys(): string[] {
+    return Array.from(this.data.keys());
+  }
 }
 
 export const qualityForTests: QualityProfile = GameConfig.quality.medium;
