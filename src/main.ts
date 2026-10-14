@@ -7,6 +7,7 @@
 
 import './styles/main.css';
 import { GameApp } from './app/GameApp';
+import { inject } from '@vercel/analytics';
 
 declare global {
   interface Window {
@@ -35,6 +36,9 @@ function showFatal(message: string): void {
 }
 
 function boot(): void {
+  // Initialize Vercel Web Analytics
+  inject();
+
   const canvas = document.getElementById('game-canvas');
   if (!(canvas instanceof HTMLCanvasElement)) {
     showFatal('The game canvas is missing from the page.');
