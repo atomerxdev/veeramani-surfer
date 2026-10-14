@@ -68,6 +68,16 @@ describe('LeaderboardService', () => {
     expect(service2.deviceId).toBe(service1.deviceId);
   });
 
+  it('starts with an empty global leaderboard when no runs have been submitted', async () => {
+    const storage = new MemoryStorage();
+    const service = new LeaderboardService(storage, { apiUrl: '' });
+
+    const global = await service.getLeaderboard('global');
+    expect(global.entries).toHaveLength(0);
+    expect(global.playerBest).toBeNull();
+    expect(global.playerRank).toBeNull();
+  });
+
   it('submits score and updates both local and global views', async () => {
     const storage = new MemoryStorage();
     const service = new LeaderboardService(storage, { apiUrl: '' });
@@ -92,10 +102,11 @@ describe('LeaderboardService', () => {
 
     // Check global tab
     const global = await service.getLeaderboard('global');
+    expect(global.entries).toHaveLength(1);
     expect(global.playerBest).not.toBeNull();
     expect(global.playerBest?.score).toBe(9500);
     expect(global.playerBest?.isCurrentPlayer).toBe(true);
-    expect(global.playerRank).toBe(6);
+    expect(global.playerRank).toBe(1);
   });
 
   it('rejects invalid submission without saving', async () => {
