@@ -1,9 +1,9 @@
 {
-  "name": "tamil-nadu-street-runner",
+  "name": "veeramani-surfer",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Veeramani Surfer - a stylized 3D endless runner set in a fictional Tamil Nadu street market.",
+  "description": "Veeramani Surfer - an original 3D endless runner game.",
   "license": "MIT",
   "engines": {
     "node": ">=20.19.0"

@@ -1,4 +1,4 @@
-# Veeramani Surfer — Tamil Nadu Street Runner
+# Veeramani Surfer
 
 An original, stylized 3D endless runner for desktop and mobile browsers.
 Veeramani, a fictional vlogger, is filming his channel in a fictional Tamil Nadu
@@ -21,7 +21,7 @@ procedurally at runtime.
 ## 1. Quick start
 
 ```bash
-cd tamil-nadu-street-runner
+cd veeramani-surfer
 npm install            # installs pinned dependencies (package-lock.json committed)
 npm run dev            # dev server, usually http://localhost:5173/
 ```
